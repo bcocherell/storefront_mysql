@@ -30,7 +30,7 @@ function start() {
           for (var i = 0; i < results.length; i++) {
             choiceArray.push({
               value: i,
-              name: results[i].product_name + ' (Price: $' + results[i].price + ', Qty Available: ' + results[i].stock_quantity + ')'
+              name: results[i].product_name + ' (price: $' + results[i].price + ', qty available: ' + results[i].stock_quantity + ')'
             });
           }
           return choiceArray;
@@ -62,14 +62,14 @@ function start() {
           ],
           function(error) {
             if (error) throw err;
-            console.log('\nYou owe me $' + (answer.quantity * chosenItem.price) + ', BAM!\n');
+            console.log('\nYou owe me $' + (answer.quantity * chosenItem.price).toFixed(2) + ', BAM!\n');
             again();
           }
         );
       }
       else {
         // Quantity not available
-        console.log("\nWe don't have enough in stock for your order (currently available: " + chosenItem.stock_quantity + "). Please try again... BAM!\n");
+        console.log("\nWe don't have enough in stock for your order (qty available: " + chosenItem.stock_quantity + "). Please try again... BAM!\n");
         start();
       }
     });
