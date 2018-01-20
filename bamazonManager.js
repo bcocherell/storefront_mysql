@@ -1,5 +1,6 @@
 var mysql = require('mysql');
 var inquirer = require("inquirer");
+const cTable = require('console.table');
 
 var connection = mysql.createConnection({
   host     : 'localhost',
@@ -21,59 +22,63 @@ function menu() {
     {
       name: "choice",
       type: "list",
-      choices: function() {
-        var choiceArray = [];
-        for (var i = 0; i < results.length; i++) {
-          choiceArray.push(results[i].product_name + ' ($' + results[i].price + ')');
-        }
-        return choiceArray;
-      },
-      message: "What item would you like to purchase?"
-    },
-    {
-      name: "quantity",
-      type: "input",
-      message: "How many do you need?"
+      choices: ['View Products for Sale','View Low Inventory','Add to Inventory','Add New Product', 'Quit'],
+      message: "Choose a management function:"
     }
   ])
   .then(function(answer) {
     // get the information of the chosen item
-    var chosenItem;
-    for (var i = 0; i < results.length; i++) {
-      if (results[i].product_name + ' ($' + results[i].price + ')' === answer.choice) {
-        chosenItem = results[i];
-      }
-    }
-
-    // determine if bid was high enough
-    if (chosenItem.stock_quantity >= parseInt(answer.quantity)) {
-      // bid was high enough, so update db, let the user know, and start over
-      connection.query(
-        "update products set ? where ?",
-        [
-          {
-            stock_quantity: chosenItem.stock_quantity - answer.quantity
-          },
-          {
-            item_id: chosenItem.item_id
-          }
-        ],
-        function(error) {
-          if (error) throw err;
-          console.log('\nYou owe me $' + (answer.quantity * chosenItem.price) + ', BAM!\n');
-          again();
-        }
-      );
-    }
-    else {
-      // Quantity not available
-      console.log("\nWe don't have enough in stock for your order (currently available: " + chosenItem.stock_quantity + "). Please try again... BAM!\n");
-      start();
+    switch (answer.choice) {
+      case 'View Products for Sale':
+        viewProducts();
+        break;
+      case 'View Low Inventory':
+        viewLowInventory();
+        break;
+      case 'Add to Inventory':
+        addToInventory();
+        break;
+      case 'Add New Product':
+        addNewProduct();
+        break;
+      case 'Quit':
+        connection.end();
+        break;
     }
   });
 }
 
-function start() {
+function viewProducts() {
+  // query the database for all items being auctioned
+  connection.query("select * from products", function(err, res) {
+    if (err) throw err;
+    
+    console.log('');
+    console.table(res);
+    
+    menu();
+  });
+}
+
+function viewLowInventory() {
+  // query the database for all items being auctioned
+  connection.query("select * from products where stock_quantity < 5", function(err, res) {
+    if (err) throw err;
+    
+    console.log('');
+    
+    if (res.length > 0) {
+      console.table(res);
+    }
+    else {
+      console.log('No records returned.\n')
+    }
+    
+    menu();
+  });
+}
+
+function addToInventory() {
   // query the database for all items being auctioned
   connection.query("select * from products", function(err, results) {
     if (err) throw err;
@@ -81,72 +86,98 @@ function start() {
     inquirer.prompt([
       {
         name: "choice",
-        type: "rawlist",
+        type: "list",
         choices: function() {
-          var choiceArray = [];
+          var choiceArray = [];          
           for (var i = 0; i < results.length; i++) {
-            choiceArray.push(results[i].product_name + ' ($' + results[i].price + ')');
+            choiceArray.push({
+              value: i,
+              name: results[i].product_name + ' (price: $' + results[i].price + ', qty available: ' + results[i].stock_quantity + ')'
+            });
           }
           return choiceArray;
         },
-        message: "What item would you like to purchase?"
+        message: "Which item did you get in?"
       },
       {
         name: "quantity",
         type: "input",
-        message: "How many do you need?"
+        message: "How many do you want to add to stock?",
+        validate: function(value) {
+          // testing to make sure input only consists of digits
+          return /^-{0,1}\d+$/.test(value);
+        }
       }
     ])
     .then(function(answer) {
       // get the information of the chosen item
-      var chosenItem;
-      for (var i = 0; i < results.length; i++) {
-        if (results[i].product_name + ' ($' + results[i].price + ')' === answer.choice) {
-          chosenItem = results[i];
-        }
-      }
-
-      // determine if bid was high enough
-      if (chosenItem.stock_quantity >= parseInt(answer.quantity)) {
-        // bid was high enough, so update db, let the user know, and start over
-        connection.query(
-          "update products set ? where ?",
-          [
-            {
-              stock_quantity: chosenItem.stock_quantity - answer.quantity
-            },
-            {
-              item_id: chosenItem.item_id
-            }
-          ],
-          function(error) {
-            if (error) throw err;
-            console.log('\nYou owe me $' + (answer.quantity * chosenItem.price) + ', BAM!\n');
-            again();
+      var chosenItem = results[answer.choice];
+      var newStockQuantity = parseInt(chosenItem.stock_quantity) + parseInt(answer.quantity);
+    
+      // update stock for item
+      connection.query(
+        "update products set ? where ?",
+        [
+          {
+            stock_quantity: newStockQuantity
+          },
+          {
+            item_id: chosenItem.item_id
           }
-        );
-      }
-      else {
-        // Quantity not available
-        console.log("\nWe don't have enough in stock for your order (currently available: " + chosenItem.stock_quantity + "). Please try again... BAM!\n");
-        start();
-      }
+        ],
+        function(error) {
+          if (error) throw err;
+          console.log('\nQuanity updated to ' + newStockQuantity + ', BAM!\n');
+          menu();
+        }
+      );
     });
   });
 }
 
-function again() {
-  inquirer.prompt({
-    name: "again",
-    type: "confirm",
-    message: "Would you like to purchase another item?"
-  }).then(function(answer) {
-    if (answer.again) {
-      start();
+function addNewProduct() {
+
+  inquirer.prompt([
+    {
+      name: "product_name",
+      message: "Enter product name:"
+    }, {
+      name: "department_name",
+      message: "Enter department name:"
+    }, {
+      name: "price",
+      message: "Enter price:",
+      validate: function(value) {
+        if (isNaN(value)) {
+          return false;
+        }
+        else {
+          return true;
+        }
+      }
+    }, {
+      name: "stock_quantity",
+      message: "Enter stock quantity",
+      validate: function(value) {
+        // testing for positive integer value using only digits
+        return /^\d+$/.test(value);
+      }
     }
-    else {
-      console.log("\nBye!");
-      connection.end();
-    }
+  ]).then(function(answers) {
+    var query = connection.query(
+      "INSERT INTO products SET ?",
+      {
+        product_name: answers.product_name,
+        department_name: answers.department_name,
+        price: parseFloat(answers.price).toFixed(2),
+        stock_quantity: parseInt(answers.stock_quantity)
+      },
+      function(err, res) {
+        if (err) throw err;
+        console.log('\n' + res.affectedRows + ' product inserted, BAM!');
+        console.log('---------------------\n');
+        menu();
+      }
+    );
   });
-}
+};

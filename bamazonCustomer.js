@@ -30,7 +30,7 @@ function start() {
           for (var i = 0; i < results.length; i++) {
             choiceArray.push({
               value: i,
-              name: results[i].product_name + ' (price: $' + results[i].price + ', qty available: ' + results[i].stock_quantity + ')'
+              name: results[i].product_name + ' ($' + results[i].price + ')'
             });
           }
           return choiceArray;
@@ -40,7 +40,11 @@ function start() {
       {
         name: "quantity",
         type: "input",
-        message: "How many do you need?"
+        message: "How many do you need?",
+        validate: function(value) {
+          // testing for positive integer value using only digits
+          return /^\d+$/.test(value);
+        }
       }
     ])
     .then(function(answer) {
