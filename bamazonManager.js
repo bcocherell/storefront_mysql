@@ -1,11 +1,14 @@
+require("dotenv").config();
+
 var mysql = require('mysql');
 var inquirer = require("inquirer");
 const cTable = require('console.table');
 
 var connection = mysql.createConnection({
-  host     : 'localhost',
-  user     : 'root',
-  password : 'FjM3B@S7Pi*yO6&%1*^r',
+  host     : process.env.MYSQL_HOST,
+  port     : process.env.MYSQL_PORT,
+  user     : process.env.MYSQL_USER,
+  password : process.env.MYSQL_PWD,
   database : 'bamazon'
 });
  
@@ -92,7 +95,7 @@ function addToInventory() {
           for (var i = 0; i < results.length; i++) {
             choiceArray.push({
               value: i,
-              name: results[i].product_name + ' (price: $' + results[i].price + ', qty available: ' + results[i].stock_quantity + ')'
+              name: results[i].product_name + ' (qty available: ' + results[i].stock_quantity + ')'
             });
           }
           return choiceArray;
