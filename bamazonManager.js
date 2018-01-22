@@ -12,10 +12,10 @@ var connection = mysql.createConnection({
   database : 'bamazon'
 });
  
-// connect to the mysql server and sql database
+// connect to the bamazon database
 connection.connect(function(err) {
   if (err) throw err;
-  // run the start function after the connection is made to prompt the user
+  // run the menu function after the connection is made to prompt the user
   console.log ("Welcome to BAMazon's management interface!")
   menu();
 });
@@ -30,7 +30,7 @@ function menu() {
     }
   ])
   .then(function(answer) {
-    // get the information of the chosen item
+    // determine which function to run based off which menu item chosen
     switch (answer.choice) {
       case 'View Products for Sale':
         viewProducts();
@@ -52,7 +52,7 @@ function menu() {
 }
 
 function viewProducts() {
-  // query the database for all items being auctioned
+  // query the database for all items being sold
   connection.query("select * from products", function(err, res) {
     if (err) throw err;
     
@@ -64,7 +64,7 @@ function viewProducts() {
 }
 
 function viewLowInventory() {
-  // query the database for all items being auctioned
+  // query the database for all items being sold that have low quantity (stock_quantity < 5)
   connection.query("select * from products where stock_quantity < 5", function(err, res) {
     if (err) throw err;
     
@@ -82,10 +82,10 @@ function viewLowInventory() {
 }
 
 function addToInventory() {
-  // query the database for all items being auctioned
-  connection.query("select * from products", function(err, results) {
+  // query the database for all items being sold, displaying low quantity items first
+  connection.query("select * from products order by stock_quantity", function(err, results) {
     if (err) throw err;
-    // once you have the items, prompt the user for which they'd like to purchase
+    // once you have the items, prompt the user for which they'd like to add stock
     inquirer.prompt([
       {
         name: "choice",

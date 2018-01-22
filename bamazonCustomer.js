@@ -11,7 +11,7 @@ var connection = mysql.createConnection({
   database : 'bamazon'
 });
  
-// connect to the mysql server and sql database
+// connect to the bamazon database
 connection.connect(function(err) {
   if (err) throw err;
   // run the start function after the connection is made to prompt the user
@@ -20,7 +20,7 @@ connection.connect(function(err) {
 });
 
 function start() {
-  // query the database for all items being auctioned
+  // query the database for all items being sold
   connection.query("select * from products", function(err, results) {
     if (err) throw err;
     // once you have the items, prompt the user for which they'd like to purchase
@@ -54,9 +54,9 @@ function start() {
       // get the information of the chosen item
       var chosenItem = results[answer.choice];
     
-      // determine if bid was high enough
+      // determine if we have enough in stock
       if (chosenItem.stock_quantity >= parseInt(answer.quantity)) {
-        // bid was high enough, so update db, let the user know, and start over
+        // we did have stock available, fulfill request and let user know how much they owe
         connection.query(
           "update products set ? where ?",
           [
@@ -75,7 +75,7 @@ function start() {
         );
       }
       else {
-        // Quantity not available
+        // Not enough quantity available
         console.log("\nWe don't have enough in stock for your order (qty available: " + chosenItem.stock_quantity + "). Please try again... BAM!\n");
         start();
       }
@@ -83,6 +83,7 @@ function start() {
   });
 }
 
+// Prompt user if they'd like to purchase another item, otherwise quit and close the connection
 function again() {
   inquirer.prompt({
     name: "again",
