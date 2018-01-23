@@ -29,6 +29,10 @@ MYSQL_PWD=your-mysql-pwd
 
   The application checks if there is sufficient quantity. If so, the database is updated to reflect the remaining quantity and shows the customer the total cost of their purchase.
 
+  Sample output:
+
+  ![Sample Output](images/screenshot1.png?raw=true "Sample output")
+
 - `node bamazonManager.js`
 
   This is the manager interface and will give you the following menu options:
@@ -41,3 +45,5 @@ MYSQL_PWD=your-mysql-pwd
     - Allows manager to add additional stock for any item in the store
   - Add New Product
     - Adds a completely new product to the store
+
+  ![Sample Output](images/screenshot2.png?raw=true "Sample output")
